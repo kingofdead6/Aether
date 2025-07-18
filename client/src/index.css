@@ -1,0 +1,5 @@
+@import "tailwindcss" ;
+
+body {
+  @apply bg-gradient-to-br from-[#1f0036] via-[#5c1f78] to-[#f72585] min-h-screen text-white;
+}
