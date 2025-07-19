@@ -411,7 +411,7 @@ const Profile = () => {
                       name="profile_image"
                       type="file"
                       accept="image/*"
-                      className="hidden"
+                      className="cursor-pointer hidden"
                       onChange={handleImageChange}
                       disabled={!isEditing}
                     />
@@ -426,13 +426,13 @@ const Profile = () => {
                   </p>
                   <button
                     onClick={() => setShowFollowManager(true)}
-                    className="text-gray-400 hover:text-white transition text-sm sm:text-base"
+                    className="cursor-pointer text-gray-400 hover:text-white transition text-sm sm:text-base"
                   >
                     <span className="font-semibold text-white">{user.followers?.length || 0}</span> Followers
                   </button>
                   <button
                     onClick={() => setShowFollowManager(true)}
-                    className="text-gray-400 hover:text-white transition text-sm sm:text-base"
+                    className="cursor-pointer text-gray-400 hover:text-white transition text-sm sm:text-base"
                   >
                     <span className="font-semibold text-white">{user.following?.length || 0}</span> Following
                   </button>
@@ -441,7 +441,7 @@ const Profile = () => {
             </div>
             <button
               onClick={toggleEditMode}
-              className="mt-4 sm:mt-0 p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg flex items-center gap-2 text-sm sm:text-base"
+              className="cursor-pointer mt-4 sm:mt-0 p-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg flex items-center gap-2 text-sm sm:text-base"
             >
               {isEditing ? (
                 <>
@@ -491,7 +491,7 @@ const Profile = () => {
               type="submit"
               onClick={handleSubmit}
               disabled={isLoading}
-              className="w-full py-2 sm:py-3 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className="cursor-pointer w-full py-2 sm:py-3 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {isLoading ? "Saving..." : "Save Profile"}
             </button>
@@ -502,7 +502,7 @@ const Profile = () => {
           <div className="flex justify-center gap-2 sm:gap-4 mb-4 flex-wrap">
             <button
               onClick={() => setTab("your")}
-              className={`px-3 py-2 rounded-lg font-semibold transition text-sm sm:text-base ${
+              className={`cursor-pointer px-3 py-2 rounded-lg font-semibold transition text-sm sm:text-base ${
                 tab === "your"
                   ? "bg-pink-600 text-white"
                   : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -512,7 +512,7 @@ const Profile = () => {
             </button>
             <button
               onClick={() => setTab("liked")}
-              className={`px-3 py-2 rounded-lg font-semibold transition text-sm sm:text-base ${
+              className={`cursor-pointer px-3 py-2 rounded-lg font-semibold transition text-sm sm:text-base ${
                 tab === "liked"
                   ? "bg-pink-600 text-white"
                   : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -522,7 +522,7 @@ const Profile = () => {
             </button>
             <button
               onClick={() => setTab("commented")}
-              className={`px-3 py-2 rounded-lg font-semibold transition text-sm sm:text-base ${
+              className={`cursor-pointer px-3 py-2 rounded-lg font-semibold transition text-sm sm:text-base ${
                 tab === "commented"
                   ? "bg-pink-600 text-white"
                   : "bg-white/10 text-gray-400 hover:bg-white/20"

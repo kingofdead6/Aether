@@ -198,7 +198,7 @@ const Posts = () => {
           <h2 className="text-3xl font-bold text-white">Posts</h2>
           <button
             onClick={() => setShowCreatePost(true)}
-            className="py-2 px-4 bg-pink-600 hover:bg-pink-700 text-white rounded-lg flex items-center gap-2"
+            className="cursor-pointer py-2 px-4 bg-pink-600 hover:bg-pink-700 text-white rounded-lg flex items-center gap-2"
           >
             <Send size={16} /> Create Post
           </button>
@@ -237,13 +237,13 @@ const Posts = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white/10 p-6 rounded-xl border border-white/20 w-full max-w-md"
+              className="bg-[#5c1f78]/80 backdrop-blur-md p-6 rounded-xl border border-white/20 w-full max-w-md"
             >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold text-white">Create Post</h3>
@@ -256,7 +256,7 @@ const Posts = () => {
                     setPreviewImages([]);
                     setError("");
                   }}
-                  className="text-gray-400 hover:text-white"
+                  className="cursor-pointer text-gray-400 hover:text-red-500"
                 >
                   <X size={24} />
                 </button>
@@ -276,7 +276,7 @@ const Posts = () => {
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1"
+                        className="cursor-pointer absolute top-0 right-0 bg-red-600 text-white rounded-full p-1"
                       >
                         <X size={16} />
                       </button>
@@ -290,7 +290,7 @@ const Posts = () => {
                     accept="image/*"
                     multiple
                     onChange={handleImageChange}
-                    className="mt-2 text-white"
+                    className="cursor-pointer mt-2 text-white"
                   />
                 </label>
                 {error && (
@@ -299,7 +299,7 @@ const Posts = () => {
                 <button
                   type="submit"
                   disabled={isLoading || !postContent || postImages.length === 0}
-                  className="w-full py-3 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cursor-pointer w-full py-3 rounded-lg bg-pink-600 hover:bg-pink-700 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Posting..." : "Post"}
                 </button>

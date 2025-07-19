@@ -485,17 +485,13 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
           />
           <div>
             <h3 className="text-lg font-semibold text-white">{otherUser.name}</h3>
-            <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-green-400" : "bg-red-400"}`} />
-              <p className="text-sm text-gray-300">{isConnected ? "Online" : "Offline"}</p>
-            </div>
           </div>
         </div>
         <motion.button
           onClick={onClose}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-gray-700/50 transition"
+          className="cursor-pointer p-2 rounded-full text-gray-300 hover:text-red-500 hover:bg-gray-700/50 transition duration-300"
         >
           <X size={20} />
         </motion.button>
@@ -572,7 +568,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                   }`}
                 >
                   <motion.button
-                    className="hidden sm:block absolute top-2 right-2 p-1 rounded-full bg-gray-800/80 text-gray-300 hover:bg-gray-700 hover:text-white transition"
+                    className="cursor-pointer hidden sm:block absolute top-2 right-2 p-1 rounded-full bg-gray-800/80 text-gray-300 hover:bg-gray-700 hover:text-white transition"
                     onClick={() => setShowMessageActions(showMessageActions === (message._id || message.tempId) ? null : message._id || message.tempId)}
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
@@ -593,7 +589,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                             setReplyingTo(message);
                             setShowMessageActions(null);
                           }}
-                          className="flex items-center gap-2 p-2 text-gray-300 hover:text-white text-sm rounded"
+                          className="cursor-pointer flex items-center gap-2 p-2 text-gray-300 hover:text-white text-sm rounded"
                         >
                           <Reply size={14} /> Reply
                         </motion.button>
@@ -606,7 +602,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                                 setEditContent(message.content);
                                 setShowMessageActions(null);
                               }}
-                              className="flex items-center gap-2 p-2 text-gray-300 hover:text-white text-sm rounded"
+                              className="cursor-pointer flex items-center gap-2 p-2 text-gray-300 hover:text-white text-sm rounded"
                             >
                               <Edit2 size={14} /> Edit
                             </motion.button>
@@ -616,7 +612,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                                 handleDeleteMessage(message._id);
                                 setShowMessageActions(null);
                               }}
-                              className="flex items-center gap-2 p-2 text-gray-300 hover:text-white text-sm rounded"
+                              className="cursor-pointer flex items-center gap-2 p-2 text-gray-300 hover:text-white text-sm rounded"
                             >
                               <Trash2 size={14} /> Delete
                             </motion.button>
@@ -667,7 +663,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => toggleAudioPlayback(message._id || message.tempId, message.file_url)}
-                            className="p-2 bg-indigo-500/80 rounded-full text-white hover:bg-indigo-600 transition"
+                            className="cursor-pointer p-2 bg-indigo-500/80 rounded-full text-white hover:bg-indigo-600 transition"
                           >
                             {playingAudio === (message._id || message.tempId) ? (
                               <Pause size={16} />
@@ -697,29 +693,31 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                         </a>
                       )}
                       {editingMessageId === (message._id || message.tempId) ? (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col gap-2">
                           <input
                             type="text"
                             value={editContent}
                             onChange={(e) => setEditContent(e.target.value)}
-                            className="flex-1 p-2 rounded-lg bg-gray-800/70 text-white border border-gray-600/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm"
+                            className="p-2 rounded-lg bg-gray-800/70 text-white border border-gray-600/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm"
                           />
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleEditMessage(message._id, editContent)}
-                            className="p-2 bg-indigo-500 rounded-lg text-white hover:bg-indigo-600 transition"
-                          >
-                            Save
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setEditingMessageId(null)}
-                            className="p-2 bg-gray-600 rounded-lg text-white hover:bg-gray-700 transition"
-                          >
-                            Cancel
-                          </motion.button>
+                          <div className="flex gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleEditMessage(message._id, editContent)}
+                              className="cursor-pointer px-4 py-2 bg-indigo-500 rounded-lg text-white hover:bg-indigo-600 transition"
+                            >
+                              Save
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setEditingMessageId(null)}
+                              className="cursor-pointer px-4 py-2 bg-gray-600 rounded-lg text-white hover:bg-gray-700 transition"
+                            >
+                              Cancel
+                            </motion.button>
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -754,15 +752,19 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             <AnimatePresence>
               {isTyping && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="flex justify-start"
-                >
-                  <div className="bg-gray-700/80 p-3 rounded-2xl shadow-md">
-                    <span className="text-gray-300 text-sm">Typing...</span>
-                  </div>
-                </motion.div>
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      className="flex justify-start px-4 py-2"
+    >
+      <div className="bg-gray-700/80 p-3 rounded-2xl shadow-md">
+        <div className="typing-dot flex space-x-1">
+          <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0s]" />
+          <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]" />
+          <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.4s]" />
+        </div>
+      </div>
+    </motion.div>
               )}
               {isSending && (
                 <motion.div
@@ -816,7 +818,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                   setContextMenu(null);
                   setShowMessageActions(null);
                 }}
-                className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-indigo-400 transition text-sm"
+                className="cursor-pointer flex items-center gap-2 px-3 py-2 text-white/90 hover:text-indigo-400 transition text-sm"
               >
                 <Reply size={16} />
                 Reply
@@ -835,7 +837,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                       setContextMenu(null);
                       setShowMessageActions(null);
                     }}
-                    className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-indigo-400 transition text-sm"
+                    className="cursor-pointer flex items-center gap-2 px-3 py-2 text-white/90 hover:text-indigo-400 transition text-sm"
                   >
                     <Edit2 size={16} />
                     Edit
@@ -847,7 +849,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                       const message = messages.find((msg) => msg._id === contextMenu.messageId || msg.tempId === contextMenu.messageId);
                       if (message) handleDeleteMessage(message._id);
                     }}
-                    className="flex items-center gap-2 px-3 py-2 text-white/90 hover:text-red-400 transition text-sm"
+                    className="cursor-pointer flex items-center gap-2 px-3 py-2 text-white/90 hover:text-red-400 transition text-sm"
                   >
                     <Trash2 size={16} />
                     Delete
@@ -879,13 +881,13 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                 e.stopPropagation();
                 setReplyingTo(null);
               }}
-              className="p-1 text-gray-300 hover:text-white"
+              className="cursor-pointer p-1 text-gray-300 hover:text-white"
             >
               <X size={16} />
             </motion.button>
           </motion.div>
         )}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-scroll md:overflow-hidden">
           <input
             type="file"
             accept="image/jpeg,image/png,video/mp4,video/webm"
@@ -897,7 +899,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             htmlFor="file-upload"
             className="p-3 rounded-lg bg-gray-800/70 text-gray-300 border border-gray-600/50 hover:bg-gray-700/70 hover:text-white transition cursor-pointer"
           >
-            <Paperclip size={14} />
+            <Paperclip size={20} />
           </label>
           <input
             type="text"
@@ -912,22 +914,22 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             onClick={isRecording ? stopRecording : startRecording}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className={`p-3 rounded-lg text-white transition ${
+            className={`cursor-pointer p-3 rounded-lg text-white transition ${
               isRecording
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-gray-800/70 hover:bg-gray-700/70"
             }`}
           >
-            <Mic size={14} />
+            <Mic size={20} />
           </motion.button>
           <motion.button
             type="submit"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="p-3 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg text-white hover:from-indigo-600 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="cursor-pointer p-3 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg text-white hover:from-indigo-600 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={(!newMessage.trim() && !selectedFile) || isLoading || isRecording}
           >
-            <Send size={14} />
+            <Send size={20} />
           </motion.button>
         </div>
         {selectedFile && (
@@ -935,7 +937,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             Selected: {selectedFile.name}
             <button
               onClick={() => setSelectedFile(null)}
-              className="ml-2 text-red-400 hover:text-red-500"
+              className="cursor-pointer ml-2 text-red-400 hover:text-red-500"
             >
               Remove
             </button>

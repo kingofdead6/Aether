@@ -129,7 +129,7 @@ const FollowManager = ({ userId, onClose }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
@@ -138,7 +138,7 @@ const FollowManager = ({ userId, onClose }) => {
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/70 hover:text-white"
+          className="cursor-pointer absolute top-4 right-4 text-white/70 hover:text-red-500"
         >
           <X size={24} />
         </button>
@@ -148,7 +148,7 @@ const FollowManager = ({ userId, onClose }) => {
         <div className="flex justify-center gap-4 mb-4">
           <button
             onClick={() => setTab("followers")}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${
+            className={`cursor-pointer px-4 py-2 rounded-lg font-semibold transition ${
               tab === "followers"
                 ? "bg-pink-600 text-white"
                 : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -158,7 +158,7 @@ const FollowManager = ({ userId, onClose }) => {
           </button>
           <button
             onClick={() => setTab("following")}
-            className={`px-4 py-2 rounded-lg font-semibold transition ${
+            className={`cursor-pointer px-4 py-2 rounded-lg font-semibold transition ${
               tab === "following"
                 ? "bg-pink-600 text-white"
                 : "bg-white/10 text-gray-400 hover:bg-white/20"
@@ -201,7 +201,7 @@ const FollowManager = ({ userId, onClose }) => {
                     {user._id !== currentUserId && (
                       <button
                         onClick={() => handleFollow(user._id)}
-                        className={`px-3 py-1 rounded-lg text-sm font-semibold transition ${
+                        className={`cursor-pointer px-3 py-1 rounded-lg text-sm font-semibold transition ${
                           user.isFollowing
                             ? "bg-gray-600 hover:bg-gray-700 text-white"
                             : "bg-pink-600 hover:bg-pink-700 text-white"
@@ -212,7 +212,7 @@ const FollowManager = ({ userId, onClose }) => {
                     )}
                     <button
                       onClick={() => handleViewProfile(user._id)}
-                      className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition"
+                      className="cursor-pointer px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition"
                     >
                       Profile
                     </button>

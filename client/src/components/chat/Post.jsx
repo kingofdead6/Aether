@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Trash2, X } from "lucide-react";
-import { API_BASE_URL } from "../../../api";
 
 const Post = ({ post, userId, onLike, onComment, onDelete }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -53,7 +52,7 @@ const Post = ({ post, userId, onLike, onComment, onDelete }) => {
         {post.user_id._id.toString() === userId && (
           <button
             onClick={() => onDelete(post._id)}
-            className="text-gray-400 hover:text-red-600"
+            className="cursor-pointer text-gray-400 hover:text-red-600"
             title="Delete Post"
           >
             <Trash2 size={20} />
@@ -71,13 +70,13 @@ const Post = ({ post, userId, onLike, onComment, onDelete }) => {
             <>
               <button
                 onClick={handlePrevImage}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+                className="cursor-pointer absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
               >
                 ←
               </button>
               <button
                 onClick={handleNextImage}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
+                className="cursor-pointer absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full"
               >
                 →
               </button>
@@ -92,7 +91,7 @@ const Post = ({ post, userId, onLike, onComment, onDelete }) => {
       <div className="flex items-center gap-4 mb-3">
         <button
           onClick={() => onLike(post._id)}
-          className="flex items-center gap-1 text-gray-400 hover:text-pink-600"
+          className="cursor-pointer flex items-center gap-1 text-gray-400 hover:text-pink-600"
         >
           <Heart
             size={20}
@@ -102,7 +101,7 @@ const Post = ({ post, userId, onLike, onComment, onDelete }) => {
         </button>
         <button
           onClick={() => setShowComments(true)}
-          className="flex items-center gap-1 text-gray-400 hover:text-pink-600"
+          className="cursor-pointer flex items-center gap-1 text-gray-400 hover:text-pink-600"
         >
           <MessageCircle size={20} />
           <span>{post.comments.length}</span>
@@ -116,19 +115,19 @@ const Post = ({ post, userId, onLike, onComment, onDelete }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
           >
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white/40 backdrop-blur-md p-6 rounded-xl border border-white/20 w-full max-w-md"
+              className="bg-[#5c1f78]/80 backdrop-blur-md p-6 rounded-xl border border-white/20 w-full max-w-md"
             >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold text-white">Comments</h3>
                 <button
                   onClick={() => setShowComments(false)}
-                  className="text-gray-400 hover:text-white"
+                  className="cursor-pointer text-gray-400 hover:text-red-500"
                 >
                   <X size={24} />
                 </button>
@@ -163,7 +162,7 @@ const Post = ({ post, userId, onLike, onComment, onDelete }) => {
                 />
                 <button
                   onClick={handleAddComment}
-                  className="px-3 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg"
+                  className="cursor-pointer px-3 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg"
                 >
                   Post
                 </button>

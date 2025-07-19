@@ -12,7 +12,7 @@ const ProfilePopup = ({ userId, onClose }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isMutualFollowing, setIsMutualFollowing] = useState(false);
   const [error, setError] = useState("");
-  const [showFollowManager, setShowFollowManager] = useState(false); // For FollowManager modal
+  const [showFollowManager, setShowFollowManager] = useState(false); 
   const navigate = useNavigate();
   const currentUserId = localStorage.getItem("userId");
 
@@ -228,7 +228,7 @@ const ProfilePopup = ({ userId, onClose }) => {
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-white/70 hover:text-white"
+          className="cursor-pointer absolute top-4 right-4 text-white/70 hover:text-red-500"
         >
           <X size={24} />
         </button>
@@ -261,13 +261,13 @@ const ProfilePopup = ({ userId, onClose }) => {
               </p>
               <button
                 onClick={() => setShowFollowManager(true)}
-                className="text-white hover:text-pink-400 transition"
+                className="cursor-pointer text-white hover:text-pink-400 transition"
               >
                 <span className="font-semibold">{profile.user.followers.length}</span> Followers
               </button>
               <button
                 onClick={() => setShowFollowManager(true)}
-                className="text-white hover:text-pink-400 transition"
+                className="cursor-pointer text-white hover:text-pink-400 transition"
               >
                 <span className="font-semibold">{profile.user.following.length}</span> Following
               </button>
@@ -275,7 +275,7 @@ const ProfilePopup = ({ userId, onClose }) => {
             <div className="flex gap-4 mb-6">
               <button
                 onClick={handleFollow}
-                className={`flex-1 py-2 rounded-lg ${
+                className={`cursor-pointer flex-1 py-2 rounded-lg ${
                   isFollowing
                     ? "bg-gray-600 hover:bg-gray-700"
                     : "bg-pink-600 hover:bg-pink-700"
@@ -285,10 +285,9 @@ const ProfilePopup = ({ userId, onClose }) => {
               </button>
               {isMutualFollowing && (
                 <button
-                  onClick={handleChat}
                   className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition flex items-center justify-center gap-2"
                 >
-                  <MessageSquare size={16} /> Chat
+                  <MessageSquare size={16} /> Chat is Open
                 </button>
               )}
             </div>

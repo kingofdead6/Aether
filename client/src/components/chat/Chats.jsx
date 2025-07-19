@@ -241,7 +241,7 @@ const Chats = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
           ref={chatListRef}
-          className="w-full md:w-1/3 lg:w-1/4 bg-indigo-500/10 backdrop-blur-md rounded-3xl shadow-xl p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 max-h-[calc(100vh-120px)] md:max-h-[calc(100vh-150px)]"
+          className="w-full md:w-1/3 lg:w-1/4 bg-gray-800/50 backdrop-blur-md rounded-3xl shadow-xl p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 max-h-[calc(100vh-120px)] md:max-h-[calc(100vh-150px)]"
         >
           <h2 className="text-3xl font-bold text-[#1a73e8] mb-8 tracking-tight sticky top-0 bg-gradient-to-r z-10">
             Your Chats
@@ -271,7 +271,7 @@ const Chats = () => {
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleSelectChat(chat)}
-                    className={`flex items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 bg-indigo-600/50 shadow-sm hover:shadow-md text-white ${
+                    className={`flex items-center p-4 rounded-2xl cursor-pointer transition-all duration-300 bg-gray-600/50 shadow-sm hover:shadow-md text-white ${
                       selectedChat?._id === chat._id
                         ? " border-[#1a73e8]"
                         : ""
