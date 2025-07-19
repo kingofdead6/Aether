@@ -8,9 +8,9 @@ import { useMediaQuery } from "react-responsive";
 
 const Chats = () => {
   const [chats, setChats] = useState([]);
+  const [socket, setSocket] = useState(null);
   const [selectedChat, setSelectedChat] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [socket, setSocket] = useState(null);
   const [socketError, setSocketError] = useState(null);
   const chatListRef = useRef(null);
   const isMobile = useMediaQuery({ query: "(max-width: 768px)" });
@@ -80,6 +80,41 @@ const Chats = () => {
       });
     });
 
+    newSocket.on("receive_message", (message) => {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat._id === message.chat_id
+            ? {
+                ...chat,
+                lastMessage: message.content || (message.file_type ? `[${message.file_type}]` : "Media"),
+                unreadCount:
+                  message.sender_id._id !== localStorage.getItem("userId")
+                    ? chat.unreadCount + 1
+                    : chat.unreadCount,
+              }
+            : chat
+        )
+      );
+    });
+
+    newSocket.on("messages_seen", ({ chatId, userId }) => {
+      if (userId !== localStorage.getItem("userId")) {
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat._id === chatId ? { ...chat, unreadCount: 0 } : chat
+          )
+        );
+      }
+    });
+
+    newSocket.on("chat_updated", ({ chatId, lastMessage, unreadCount }) => {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat._id === chatId ? { ...chat, lastMessage, unreadCount } : chat
+        )
+      );
+    });
+
     return () => {
       console.log("Disconnecting Socket.IO");
       newSocket.disconnect();
@@ -87,7 +122,7 @@ const Chats = () => {
   }, []);
 
   // Fetch chats
-  useEffect(() => {
+   useEffect(() => {
     const fetchChats = async () => {
       setIsLoading(true);
       try {
@@ -96,20 +131,21 @@ const Chats = () => {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         });
+
         const data = await response.json();
+
         if (response.ok) {
-          setChats(data);
+          setChats(data); // You MUST return lastMessage and unreadCount from your backend!
         } else {
           console.error("Failed to fetch chats:", data.message);
-          setSocketError(data.message);
         }
       } catch (error) {
-        console.error("Error fetching chats:", error);
-        setSocketError("Error fetching chats: " + error.message);
+        console.error("Fetch error:", error);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchChats();
   }, []);
 

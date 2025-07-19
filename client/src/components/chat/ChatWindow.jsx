@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, Wifi, WifiOff, Paperclip, Mic, Play, Pause, Edit2, Trash2, Reply, Check, CheckCheck, Menu, LogOut, MoreVertical } from "lucide-react";
 import { API_BASE_URL } from "../../../api";
 
 const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
-  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +17,6 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editContent, setEditContent] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [showMessageActions, setShowMessageActions] = useState(null);
   const messagesEndRef = useRef(null);
@@ -46,16 +43,6 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
       setTimeout(() => {
         messageElement.classList.remove("bg-yellow-500/20");
       }, 2000);
-    }
-  };
-
-  const handleLogout = () => {
-    if (window.confirm("Are you sure you want to log out?")) {
-      setIsSending(true);
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
-      navigate("/login");
-      setIsMobileMenuOpen(false);
     }
   };
 
@@ -136,7 +123,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
           return [...prev, { ...message, status: "sent" }];
         });
         setIsSending(false);
-        setReplyingTo(null); // Clear reply only when message is successfully received
+        setReplyingTo(null);
         scrollToBottom();
       }
     });
@@ -161,23 +148,39 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
       setMessages((prev) =>
         prev.map((msg) =>
           msg._id === messageId
-            ? { ...msg, seenBy: [...new Set([...msg.seenBy, userId])] }
+            ? { ...msg, seenBy: [...new Set([...(msg.seenBy || []), userId])] }
             : msg
         )
       );
+    });
+
+    socket.on("messages_seen", ({ messageIds, userId }) => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          messageIds.includes(msg._id)
+            ? { ...msg, seenBy: [...new Set([...(msg.seenBy || []), userId])] }
+            : msg
+        )
+      );
+    });
+
+    socket.on("unseen_messages", ({ messageIds }) => {
+      if (messageIds.length > 0) {
+        markMessagesAsSeen(messageIds);
+      }
     });
 
     socket.on("message_error", ({ tempId, error }) => {
       setError(error);
       setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
       setIsSending(false);
-      setReplyingTo(null); // Clear reply on error
+      setReplyingTo(null);
     });
 
     socket.on("error", ({ message }) => {
       setError(message);
       setIsSending(false);
-      setReplyingTo(null); // Clear reply on error
+      setReplyingTo(null);
     });
 
     socket.on("typing", ({ userId }) => {
@@ -196,12 +199,54 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
       socket.off("message_updated");
       socket.off("message_deleted");
       socket.off("message_seen");
+      socket.off("messages_seen");
+      socket.off("unseen_messages");
       socket.off("message_error");
       socket.off("error");
       socket.off("typing");
       clearTimeout(typingTimeoutRef.current);
     };
   }, [chatId, socket]);
+
+  const markMessagesAsSeen = (messageIds) => {
+    if (messageIds.length > 0 && socket?.connected) {
+      socket.emit("mark_messages_seen", {
+        chatId,
+        messageIds,
+      });
+    }
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleMessageIds = entries
+          .filter((entry) => entry.isIntersecting)
+          .map((entry) => entry.target.dataset.messageId)
+          .filter((id) => {
+            const message = messages.find((msg) => msg._id === id);
+            return (
+              message &&
+              message.sender_id._id !== localStorage.getItem("userId") &&
+              !message.seenBy?.includes(localStorage.getItem("userId"))
+            );
+          });
+        if (visibleMessageIds.length > 0) {
+          markMessagesAsSeen(visibleMessageIds);
+        }
+      },
+      {
+        root: messageContainerRef.current,
+        threshold: 0.5,
+      }
+    );
+
+    Object.values(messageRefs.current).forEach((element) => {
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [messages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -338,6 +383,26 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
     isSendingRef.current = true;
     setIsSending(true);
     const tempId = `${Date.now()}-${Math.random()}`;
+
+    const formData = new FormData();
+    formData.append("content", newMessage);
+    formData.append("tempId", tempId);
+
+    if (replyingTo) {
+      formData.append("replyTo", JSON.stringify({
+        _id: replyingTo._id,
+        content: replyingTo.content,
+        sender_id: replyingTo.sender_id,
+        file_url: replyingTo.file_url,
+        file_type: replyingTo.file_type,
+        isDeleted: replyingTo.isDeleted || false,
+      }));
+    }
+
+    if (selectedFile) {
+      formData.append("file", selectedFile);
+    }
+
     const tempMessage = {
       chat_id: chatId,
       sender_id: { _id: localStorage.getItem("userId") },
@@ -354,8 +419,18 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
       createdAt: new Date().toISOString(),
       status: "sending",
       seenBy: [localStorage.getItem("userId")],
-      replyTo: replyingTo?._id ? { _id: replyingTo._id, content: replyingTo.content, sender_id: replyingTo.sender_id, file_url: replyingTo.file_url, file_type: replyingTo.file_type } : null,
+      replyTo: replyingTo
+        ? {
+            _id: replyingTo._id,
+            content: replyingTo.content,
+            sender_id: replyingTo.sender_id,
+            file_url: replyingTo.file_url,
+            file_type: replyingTo.file_type,
+            isDeleted: replyingTo.isDeleted || false,
+          }
+        : null,
     };
+
     setMessages((prev) => [...prev, tempMessage]);
     setNewMessage("");
     setSelectedFile(null);
@@ -364,49 +439,26 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
     setTimeout(() => scrollToBottom("instant"), 0);
 
     try {
-      if (socket.connected && !selectedFile) {
-        socket.emit("send_message", {
-          chatId,
-          senderId: localStorage.getItem("userId"),
-          content: newMessage,
-          tempId,
-          replyTo: replyingTo?._id || null,
-        });
-      } else {
-        const formData = new FormData();
-        formData.append("content", newMessage);
-        formData.append("tempId", tempId);
-        if (selectedFile) {
-          formData.append("file", selectedFile);
-        }
-        if (replyingTo) {
-          formData.append("replyTo", replyingTo._id);
-        }
+      const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/message`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      });
 
-        const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/message`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          body: formData,
-        });
-        const data = await response.json();
-        if (!response.ok) {
-          setError(data.message || "Failed to send message");
-          setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
-          setIsSending(false);
-          setReplyingTo(null); // Clear reply only on error
-        } else {
-          setReplyingTo(null); // Clear reply on successful send
-        }
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send message");
       }
+
+      setReplyingTo(null);
     } catch (error) {
       setError("Error sending message: " + error.message);
       setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
-      setIsSending(false);
-      setReplyingTo(null); // Clear reply on error
     } finally {
       isSendingRef.current = false;
+      setIsSending(false);
     }
   };
 
@@ -421,12 +473,22 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
       sender_id: { _id: localStorage.getItem("userId") },
       content: "",
       file_url: URL.createObjectURL(file),
+     warden_id: "warden-4",
       file_type: fileType,
       tempId,
       createdAt: new Date().toISOString(),
       status: "sending",
       seenBy: [localStorage.getItem("userId")],
-      replyTo: replyingTo?._id ? { _id: replyingTo._id, content: replyingTo.content, sender_id: replyingTo.sender_id, file_url: replyingTo.file_url, file_type: replyingTo.file_type } : null,
+      replyTo: replyingTo
+        ? {
+            _id: replyingTo._id,
+            content: replyingTo.content,
+            sender_id: replyingTo.sender_id,
+            file_url: replyingTo.file_url,
+            file_type: replyingTo.file_type,
+            isDeleted: replyingTo.isDeleted,
+          }
+        : null,
     };
     setMessages((prev) => [...prev, tempMessage]);
     setError(null);
@@ -438,7 +500,14 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
       formData.append("tempId", tempId);
       formData.append("file", file);
       if (replyingTo) {
-        formData.append("replyTo", replyingTo._id);
+        formData.append("replyTo", JSON.stringify({
+          _id: replyingTo._id,
+          content: replyingTo.content,
+          sender_id: replyingTo.sender_id,
+          file_url: replyingTo.file_url,
+          file_type: replyingTo.file_type,
+          isDeleted: replyingTo.isDeleted,
+        }));
       }
 
       const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/message`, {
@@ -453,15 +522,15 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
         setError(data.message || "Failed to send media");
         setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
         setIsSending(false);
-        setReplyingTo(null); // Clear reply only on error
+        setReplyingTo(null);
       } else {
-        setReplyingTo(null); // Clear reply on successful send
+        setReplyingTo(null);
       }
     } catch (error) {
       setError("Error sending media: " + error.message);
       setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
       setIsSending(false);
-      setReplyingTo(null); // Clear reply on error
+      setReplyingTo(null);
     } finally {
       isSendingRef.current = false;
     }
@@ -485,6 +554,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
           />
           <div>
             <h3 className="text-lg font-semibold text-white">{otherUser.name}</h3>
+         
           </div>
         </div>
         <motion.button
@@ -536,6 +606,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             {messages.map((message) => (
               <motion.div
                 key={message._id || message.tempId}
+                data-message-id={message._id}
                 ref={(el) => (messageRefs.current[message._id || message.tempId] = el)}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -627,18 +698,33 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                     <>
                       {message.replyTo && (
                         <motion.div
-                          className="mb-3 p-3 bg-gray-800/90 rounded-lg text-sm border-l-4 border-indigo-500 cursor-pointer hover:bg-gray-800 transition-colors"
+                          className={`mb-3 p-3 rounded-lg text-sm border-l-4 ${
+                            message.sender_id._id === localStorage.getItem("userId")
+                              ? "bg-indigo-900/30 border-indigo-400"
+                              : "bg-gray-800/90 border-gray-500"
+                          } cursor-pointer hover:bg-opacity-80 transition-colors`}
                           onClick={() => scrollToMessage(message.replyTo._id)}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <p className="text-indigo-300 font-medium">
-                            Replying to {message.replyTo.sender_id?.name || "Unknown"}
+                          <p className={`font-medium ${
+                            message.sender_id._id === localStorage.getItem("userId")
+                              ? "text-indigo-200"
+                              : "text-gray-300"
+                          }`}>
+                            Replying to {message.replyTo.sender_id?._id === localStorage.getItem("userId")
+                              ? "yourself"
+                              : otherUser.name}
                           </p>
-                          <p className="text-gray-200 truncate">
+                          <p className={`${
+                            message.sender_id._id === localStorage.getItem("userId")
+                              ? "text-indigo-100"
+                              : "text-gray-200"
+                          } truncate`}>
                             {message.replyTo.isDeleted
                               ? "Deleted message"
-                              : message.replyTo.content || `[${message.replyTo.file_type || "Media"}]`}
+                              : message.replyTo.content ||
+                                (message.replyTo.file_type ? `[${message.replyTo.file_type}]` : "[Media]")}
                           </p>
                         </motion.div>
                       )}
@@ -728,7 +814,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                               <div className="flex items-center gap-1">
                                 {message.status === "sending" ? (
                                   <span className="text-xs text-gray-300">Sending...</span>
-                                ) : message.seenBy.length > 1 ? (
+                                ) : message.seenBy?.length > 1 ? (
                                   <>
                                     <CheckCheck size={14} className="text-blue-400" />
                                     <span className="text-xs text-blue-400">Seen</span>
@@ -752,19 +838,19 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             <AnimatePresence>
               {isTyping && (
                 <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      className="flex justify-start px-4 py-2"
-    >
-      <div className="bg-gray-700/80 p-3 rounded-2xl shadow-md">
-        <div className="typing-dot flex space-x-1">
-          <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0s]" />
-          <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]" />
-          <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.4s]" />
-        </div>
-      </div>
-    </motion.div>
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="flex justify-start px-4 py-2"
+                >
+                  <div className="bg-gray-700/80 p-3 rounded-2xl shadow-md">
+                    <div className="typing-dot flex space-x-1">
+                      <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0s]" />
+                      <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <span className="dot w-2 h-2 bg-gray-300 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                  </div>
+                </motion.div>
               )}
               {isSending && (
                 <motion.div
@@ -775,21 +861,6 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
                 >
                   <div className="bg-indigo-600/80 p-3 rounded-2xl shadow-md">
                     <span className="text-white text-sm">Sending...</span>
-                    {replyingTo && (
-                      <motion.div
-                        className="mt-2 p-2 bg-gray-800/90 rounded-lg text-xs border-l-4 border-indigo-500 cursor-pointer hover:bg-gray-800 transition-colors"
-                        onClick={() => scrollToMessage(replyingTo._id)}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <p className="text-indigo-300 font-medium">
-                          Replying to {replyingTo.sender_id?.name || "Unknown"}
-                        </p>
-                        <p className="text-gray-200 truncate">
-                          {replyingTo.content || `[${replyingTo.file_type || "Media"}]`}
-                        </p>
-                      </motion.div>
-                    )}
                   </div>
                 </motion.div>
               )}
@@ -871,8 +942,17 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             onClick={() => scrollToMessage(replyingTo._id)}
           >
             <div>
-              <p className="text-indigo-300 font-medium">Replying to {replyingTo.sender_id?.name || "Unknown"}</p>
-              <p className="text-gray-200 truncate">{replyingTo.content || `[${replyingTo.file_type || "Media"}]`}</p>
+              <p className="text-indigo-300 font-medium">
+                Replying to {replyingTo.sender_id?._id === localStorage.getItem("userId")
+                  ? "yourself"
+                  : otherUser.name}
+              </p>
+              <p className="text-gray-200 truncate">
+                {replyingTo.isDeleted
+                  ? "Deleted message"
+                  : replyingTo.content ||
+                    (replyingTo.file_type ? `[${replyingTo.file_type}]` : "[Media]")}
+              </p>
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}

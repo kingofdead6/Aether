@@ -31,54 +31,58 @@ const upload = multer({
 export const sendMessage = [
   upload.single("file"),
   async (req, res) => {
-    console.log("=== sendMessage Triggered ===");
-
     const { chatId } = req.params;
-    const { content, tempId, replyTo } = req.body; // Added replyTo
-    const senderId = req.user._id.toString();
+    const { content, tempId } = req.body;
+    let replyTo = null;
 
-    console.log("chatId:", chatId);
-    console.log("content:", content);
-    console.log("tempId:", tempId);
-    console.log("replyTo:", replyTo);
-    console.log("senderId:", senderId);
+    // 1. Parse replyTo data
+    try {
+      if (req.body.replyTo) {
+        replyTo = typeof req.body.replyTo === 'string' ? 
+          JSON.parse(req.body.replyTo) : 
+          req.body.replyTo;
+        
+        // Validate replyTo object
+        if (!replyTo._id) {
+          return res.status(400).json({ message: "Invalid reply format" });
+        }
+
+        // Verify replied message exists
+        const repliedMessage = await Message.findById(replyTo._id);
+        if (!repliedMessage) {
+          return res.status(400).json({ message: "Replied message not found" });
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing replyTo:", e);
+      return res.status(400).json({ message: "Invalid reply data" });
+    }
 
     try {
-      if (!chatId) {
-        console.log("Chat ID missing.");
-        return res.status(400).json({ message: "Chat ID is required" });
-      }
-
+      // 2. Validate chat and permissions
       const chat = await Chat.findById(chatId)
         .populate("user1_id", "name profile_image")
         .populate("user2_id", "name profile_image");
 
       if (!chat) {
-        console.log("Chat not found for chatId:", chatId);
         return res.status(404).json({ message: "Chat not found" });
       }
 
+      const senderId = req.user._id.toString();
       if (
         chat.user1_id?._id.toString() !== senderId &&
         chat.user2_id?._id.toString() !== senderId
       ) {
-        console.log("Unauthorized user trying to send message");
         return res.status(403).json({ message: "Unauthorized" });
       }
 
-      console.log("Chat validated. Proceeding...");
-
+      // 3. Handle file upload if exists
       let file_url = null;
       let file_type = null;
       let public_id = null;
       let thumbnail_url = null;
 
       if (req.file) {
-        console.log("File detected. Starting upload...");
-        console.log("Original file:", req.file.originalname);
-        console.log("MIME type:", req.file.mimetype);
-        console.log("Size:", req.file.size);
-
         const isWebmAudio = req.file.mimetype === "audio/webm";
         const isVideo = req.file.mimetype.startsWith("video");
         const isAudio = req.file.mimetype.startsWith("audio");
@@ -89,71 +93,43 @@ export const sendMessage = [
           ? "raw"
           : "image";
 
-        console.log("Determined resource_type:", resource_type);
+        const result = await new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              resource_type,
+              folder: "chat_files",
+              format: isWebmAudio ? "webm" : undefined,
+            },
+            (error, result) => error ? reject(error) : resolve(result)
+          );
 
-        try {
-          const result = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              {
-                resource_type,
-                folder: "chat_files",
-                format: isWebmAudio ? "webm" : undefined,
-              },
-              (error, result) => {
-                if (error) {
-                  console.error("Cloudinary upload error:", error);
-                  reject(error);
-                } else {
-                  console.log("Cloudinary upload result received.");
-                  resolve(result);
-                }
-              }
-            );
+          const bufferStream = new PassThrough();
+          bufferStream.end(req.file.buffer);
+          bufferStream.pipe(uploadStream);
+        });
 
-            const bufferStream = new PassThrough();
-            bufferStream.end(req.file.buffer);
-            bufferStream.on("error", (err) => {
-              console.error("Buffer stream error:", err);
-              reject(err);
-            });
-            bufferStream.pipe(uploadStream);
+        file_url = result.secure_url;
+        public_id = result.public_id;
+        file_type = req.file.mimetype.startsWith("image")
+          ? "image"
+          : isVideo || isWebmAudio
+          ? "video"
+          : isAudio
+          ? "audio"
+          : "pdf";
+
+        if (isVideo) {
+          thumbnail_url = cloudinary.url(result.public_id, {
+            resource_type: "video",
+            transformation: [
+              { width: 200, height: 200, crop: "fill" },
+              { format: "jpg" },
+            ],
           });
-
-          file_url = result.secure_url;
-          public_id = result.public_id;
-          file_type = req.file.mimetype.startsWith("image")
-            ? "image"
-            : isVideo || isWebmAudio
-            ? "audio"
-            : isAudio
-            ? "audio"
-            : "document";
-
-          console.log("Upload success:");
-          console.log("  file_url:", file_url);
-          console.log("  public_id:", public_id);
-          console.log("  file_type:", file_type);
-          console.log("  resource_type:", result.resource_type);
-          console.log("  format:", result.format);
-
-          if (isVideo) {
-            thumbnail_url = cloudinary.url(result.public_id, {
-              resource_type: "video",
-              transformation: [
-                { width: 200, height: 200, crop: "fill" },
-                { format: "jpg" },
-              ],
-            });
-            console.log("Generated thumbnail_url:", thumbnail_url);
-          }
-        } catch (uploadError) {
-          console.error("Error during Cloudinary upload:", uploadError);
-          return res.status(500).json({ message: "File upload failed", error: uploadError.message });
         }
-      } else {
-        console.log("No file attached to this message.");
       }
 
+      // 4. Create and save message
       const message = new Message({
         chat_id: chatId,
         sender_id: senderId,
@@ -163,30 +139,32 @@ export const sendMessage = [
         public_id,
         thumbnail_url,
         seenBy: [senderId],
-        replyTo: replyTo || null, // Include replyTo in the message
+        replyTo: replyTo?._id || null,
       });
 
       await message.save();
-      console.log("Message saved in DB. ID:", message._id);
 
+      // 5. Populate all necessary fields for response
       const populatedMessage = await Message.findById(message._id)
         .populate("sender_id", "name profile_image")
         .populate({
           path: "replyTo",
           select: "content sender_id file_url file_type isDeleted",
-          populate: { path: "sender_id", select: "name profile_image" },
-        })
-        .lean();
+          populate: {
+            path: "sender_id",
+            select: "name profile_image"
+          }
+        });
 
+      // 6. Prepare complete response
       const messagePayload = {
-        ...populatedMessage,
+        ...populatedMessage.toObject(),
         chat_id: chatId,
         tempId,
         sender_id: {
           _id: populatedMessage.sender_id?._id.toString() || senderId,
           name: populatedMessage.sender_id?.name || "User deleted",
           profile_image: populatedMessage.sender_id?.profile_image || null,
-          isDeleted: !populatedMessage.sender_id,
         },
         replyTo: populatedMessage.replyTo
           ? {
@@ -196,7 +174,6 @@ export const sendMessage = [
                 _id: populatedMessage.replyTo.sender_id?._id.toString(),
                 name: populatedMessage.replyTo.sender_id?.name || "User deleted",
                 profile_image: populatedMessage.replyTo.sender_id?.profile_image || null,
-                isDeleted: !populatedMessage.replyTo.sender_id,
               },
               file_url: populatedMessage.replyTo.file_url,
               file_type: populatedMessage.replyTo.file_type,
@@ -205,50 +182,40 @@ export const sendMessage = [
           : null,
       };
 
+      // 7. Emit to socket
       const io = req.app.get("io");
       io.to(chatId).emit("receive_message", messagePayload);
-      console.log("Message emitted to socket room:", chatId);
 
-      const recipientId =
-        chat.user1_id._id.toString() === senderId
-          ? chat.user2_id._id.toString()
-          : chat.user1_id._id.toString();
-
-      const senderName =
-        chat.user1_id._id.toString() === senderId
-          ? chat.user1_id?.name || "User deleted"
-          : chat.user2_id?.name || "User deleted";
+      // 8. Create notification
+      const recipientId = chat.user1_id._id.toString() === senderId
+        ? chat.user2_id._id.toString()
+        : chat.user1_id._id.toString();
 
       const notification = new Notification({
         user_id: recipientId,
         type: "new_message",
-        message: `New ${file_type || "message"} from ${senderName}`,
+        message: `New ${file_type || "message"} from ${req.user.name}`,
         related_id: chatId,
         read: false,
       });
 
       await notification.save();
-      console.log("Notification created for recipientId:", recipientId);
 
-      const users = req.app.get("users");
-      const recipientSocket = users.get(recipientId);
-      if (recipientSocket) {
-        io.to(recipientSocket).emit("receive_notification", notification);
-        console.log("Notification emitted to socket:", recipientSocket);
-      }
-
+      // 9. Send response
       res.status(200).json({
         status: "success",
         data: messagePayload,
       });
-      console.log("=== sendMessage Completed ===");
-    } catch (error) {
-      console.error("Fatal error in sendMessage:", error);
-      res.status(500).json({ message: "Server error", error: error.message });
-    }
-  },
-];
 
+    } catch (error) {
+      console.error("Error in sendMessage:", error);
+      res.status(500).json({ 
+        message: "Server error", 
+        error: error.message 
+      });
+    }
+  }
+];
 
 
 
