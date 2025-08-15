@@ -989,19 +989,7 @@ const ChatWindow = ({ chatId, otherUser, onClose, socket }) => {
             className="flex-1 p-3 rounded-lg bg-gray-800/70 text-white border border-gray-600/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm"
             disabled={isRecording}
           />
-          <motion.button
-            type="button"
-            onClick={isRecording ? stopRecording : startRecording}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`cursor-pointer p-3 rounded-lg text-white transition ${
-              isRecording
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-gray-800/70 hover:bg-gray-700/70"
-            }`}
-          >
-            <Mic size={20} />
-          </motion.button>
+          
           <motion.button
             type="submit"
             whileHover={{ scale: 1.05 }}

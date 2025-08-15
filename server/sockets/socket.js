@@ -1,3 +1,4 @@
+// setupSocket.js (backend)
 import { Server } from "socket.io";
 import Message from "../Models/messageModel.js";
 import Notification from "../Models/notificationModel.js";
