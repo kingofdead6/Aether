@@ -1,11 +1,10 @@
-// src/components/Footer.jsx
 import React from "react";
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from "react-icons/fa";
+import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin, FaGooglePlay, FaDownload } from "react-icons/fa";
 
 const Footer = () => {
   return (
     <footer className="bg-gradient-to-t from-[#0f0f0f] to-[#1a1a1a] text-white px-6 py-10">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 text-center md:text-left">
         {/* Brand */}
         <div>
           <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 mb-4">
@@ -24,6 +23,17 @@ const Footer = () => {
             <li><a href="/login" className="hover:text-pink-400 transition">Login</a></li>
             <li><a href="/register" className="hover:text-pink-400 transition">Register</a></li>
           </ul>
+        </div>
+
+        {/* Download Our App */}
+        <div>
+          <h3 className="text-xl font-semibold mb-4 text-white">Download Our App</h3>
+          <p className="text-gray-400 mb-4">Get Aether on your phone and connect anytime, anywhere.</p>
+          <div className="flex justify-center md:justify-start gap-4">
+            <a href="https://aether-file.vercel.app/Aether.apk" className="flex justify-center md:justify-start gap-4 text-pink-400">
+              <FaDownload className="hover:text-white transition" />
+            </a>
+          </div>
         </div>
 
         {/* Social */}
